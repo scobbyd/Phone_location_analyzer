@@ -47,7 +47,23 @@ Mobile phones report location sparsely when stationary (every 1-4 hours). This t
 - Both conservative and complete analyses
 - Ready for submission
 
-## Installation
+## Running (Docker — recommended)
+
+No local Python dependencies needed. Place your JSON files in `data/` and run:
+
+```bash
+docker run --rm \
+  -v $(pwd):/app \
+  -v /path/to/your/json/files:/app/data:ro \
+  -w /app python:3.12-slim bash -c "
+pip install -q pandas numpy pyyaml geopy matplotlib seaborn plotly folium python-dateutil
+python run.py
+"
+```
+
+Output goes to `output/` — calendars, heatmaps, interactive map, and IND report.
+
+## Installation (local alternative)
 
 ### Requirements
 
@@ -57,16 +73,12 @@ Mobile phones report location sparsely when stationary (every 1-4 hours). This t
 ### Setup
 
 ```bash
-# Clone or download this repository
-cd immigration-location-analysis
+git clone git@github.com:scobbyd/Phone_location_analyzer.git
+cd Phone_location_analyzer
 
-# Install dependencies
 pip install -r requirements.txt
-# OR using uv (faster)
-uv pip install -r requirements.txt
 
 # Configure your analysis
-cp config.yaml config.yaml.backup  # Optional: backup
 nano config.yaml  # Edit with your dates and file names
 ```
 
