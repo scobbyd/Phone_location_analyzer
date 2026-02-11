@@ -1,6 +1,13 @@
+# Sensitive data - NEVER commit
 data/
 output/
+config.yaml
 *.json
+*.png
+*.html
+*.txt
+
+# Python
 __pycache__/
 *.pyc
 .env
@@ -12,3 +19,10 @@ venv/
 htmlcov/
 dist/
 build/
+
+# Generated docs from agents
+COMPLETION_REPORT.md
+FILE_REFERENCE.md
+PROJECT_SUMMARY.md
+QUICKSTART.md
+install_dependencies.sh

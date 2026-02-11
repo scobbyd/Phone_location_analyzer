@@ -1,0 +1,65 @@
+# Immigration Location Analysis Configuration
+# Copy this file to config.yaml and edit with your details
+#   cp config.example.yaml config.yaml
+
+# Analysis time period
+start_date: "2025-01-01"  # Start analyzing from this date
+
+# Key relationship dates (for visualization and context)
+key_dates:
+  first_meeting: "2025-01-15"
+  separation_start: "2025-06-01"
+  # Add more dates as needed:
+  # argentina_start: "2025-11-24"
+  # reunion: "2026-01-15"
+
+# Data files (relative to data/ directory)
+data_files:
+  partner1:
+    - "Timeline_partner1_phone1.json"
+    - "Timeline_partner1_phone2.json"
+  partner2:
+    - "Timeline_partner2_phone.json"
+
+# Analysis parameters
+thresholds:
+  distance_meters: 150      # Two points within this distance are considered "same location"
+  time_minutes: 30          # Time window for matching location reports
+
+# Interpolation settings (handles sparse data from stationary phones)
+interpolation:
+  max_gap_hours: 12         # If same location within 12h gap, assume continuous presence
+  overnight_hours:
+    start: 22               # Evening time (22:00)
+    end: 6                  # Morning time (06:00)
+  home_tolerance_meters: 300  # Tolerance for "near home" detection
+
+# Country detection (for vacation identification)
+# Format: [min_lat, max_lat, min_lon, max_lon]
+country_bounds:
+  your_country:
+    region: [50.0, 52.0, 4.0, 7.0]
+    general: [50.0, 54.0, 3.0, 8.0]
+  neighboring_country: [49.0, 51.0, 2.0, 6.0]
+  # Add more countries as needed
+
+# Output settings
+output:
+  directory: "output"
+  formats:
+    - "html"  # Interactive maps and timelines
+    - "txt"   # IND report
+  privacy:
+    round_coords_decimals: 3  # Round coordinates for privacy (3 = ~100m accuracy)
+
+# Visualization settings
+visualization:
+  map:
+    default_zoom: 8
+    heatmap_radius: 15
+    cluster_markers: true
+  calendar:
+    colorscale: "Greens"  # GitHub-style green
+  timeline:
+    show_gaps: true
+    highlight_interpolated: true
