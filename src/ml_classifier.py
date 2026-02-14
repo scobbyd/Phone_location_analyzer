@@ -1184,13 +1184,23 @@ def run_ensemble(
         else:
             ensemble[d] = 'no_data'
 
-    rb_together_count = sum(1 for v in ensemble.values() if v == 'together')
-    total_together = rb_together_count + ml_rescued
-    total_tracked = sum(1 for v in ensemble.values() if v != 'no_data')
+    # Stats: only count from first_meeting onwards
+    first_meeting = None
+    fm = analyzer.config.get('key_dates', {}).get('first_meeting')
+    if fm:
+        first_meeting = date.fromisoformat(str(fm))
+
+    def _from_meeting(d):
+        return first_meeting is None or d >= first_meeting
+
+    rb_together_count = sum(1 for d, v in ensemble.items() if v == 'together' and _from_meeting(d))
+    ml_rescued_count = sum(1 for d, v in ensemble.items() if v == 'ml_together' and _from_meeting(d))
+    total_together = rb_together_count + ml_rescued_count
+    total_tracked = sum(1 for d, v in ensemble.items() if v != 'no_data' and _from_meeting(d))
 
     print(f"\n  Ensemble Results:")
     print(f"    Rule-based together: {rb_together_count}")
-    print(f"    ML-rescued (p>={threshold}): {ml_rescued}")
+    print(f"    ML-rescued (p>={threshold}): {ml_rescued_count}")
     print(f"    Total together: {total_together}/{total_tracked} tracked days")
     if metrics:
         print(f"    ML CV F1: {metrics['f1']:.3f}")

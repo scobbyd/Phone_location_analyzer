@@ -10,6 +10,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+from datetime import date as _date
+
 from analyzer import LocationAnalyzer
 from visualizer import LocationVisualizer
 from report import INDReportGenerator
@@ -60,10 +62,13 @@ def main():
         print("=" * 60)
         ensemble_days = run_ensemble(analyzer, threshold=0.7)
         if ensemble_days:
-            rb_count = sum(1 for v in ensemble_days.values() if v == 'together')
-            ml_count = sum(1 for v in ensemble_days.values() if v == 'ml_together')
+            fm = analyzer.config.get('key_dates', {}).get('first_meeting')
+            first_meeting = _date.fromisoformat(str(fm)) if fm else None
+            def _fm(d): return first_meeting is None or d >= first_meeting
+            rb_count = sum(1 for d, v in ensemble_days.items() if v == 'together' and _fm(d))
+            ml_count = sum(1 for d, v in ensemble_days.items() if v == 'ml_together' and _fm(d))
             total = rb_count + ml_count
-            tracked = sum(1 for v in ensemble_days.values() if v != 'no_data')
+            tracked = sum(1 for d, v in ensemble_days.items() if v != 'no_data' and _fm(d))
             print(f"\n  Ensemble: {total}/{tracked} days together "
                   f"({total/tracked*100:.1f}%) [{rb_count} GPS + {ml_count} ML]")
     except ImportError:
@@ -137,9 +142,12 @@ def main():
         print(f"  Tracked days together: {ind['days_together']}/{ind['total_tracked_days']} ({ind['pct_days_together']}%)")
         print(f"  Nights at shared address: {ind['nights_at_shared_address']}/{ind['total_tracked_nights']} ({ind['pct_nights_together']}%)")
     if ensemble_days:
-        rb = sum(1 for v in ensemble_days.values() if v == 'together')
-        ml = sum(1 for v in ensemble_days.values() if v == 'ml_together')
-        tracked = sum(1 for v in ensemble_days.values() if v != 'no_data')
+        fm = analyzer.config.get('key_dates', {}).get('first_meeting')
+        first_meeting = _date.fromisoformat(str(fm)) if fm else None
+        def _fm(d): return first_meeting is None or d >= first_meeting
+        rb = sum(1 for d, v in ensemble_days.items() if v == 'together' and _fm(d))
+        ml = sum(1 for d, v in ensemble_days.items() if v == 'ml_together' and _fm(d))
+        tracked = sum(1 for d, v in ensemble_days.items() if v != 'no_data' and _fm(d))
         print()
         print("Ensemble Metrics (GPS + ML):")
         print(f"  Total days together: {rb + ml}/{tracked} ({(rb+ml)/tracked*100:.1f}%)")

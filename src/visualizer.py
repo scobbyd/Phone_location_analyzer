@@ -759,34 +759,47 @@ class LocationVisualizer:
         together_count = 0
         ml_rescued_count = 0
 
+        # Only count metrics from first_meeting onwards
+        first_meeting = None
+        fm = self.config.get('key_dates', {}).get('first_meeting')
+        if fm:
+            from datetime import date as _date_type
+            first_meeting = _date_type.fromisoformat(str(fm))
+
         for date in date_range:
             d = date.date()
             both_tracked = d in p1_days and d in p2_days
+            count_this = first_meeting is None or d >= first_meeting
 
             if ensemble_days and d in ensemble_days:
                 state = ensemble_days[d]
                 if state == 'together':
                     val = 2
-                    tracked_days += 1
-                    together_count += 1
+                    if count_this:
+                        tracked_days += 1
+                        together_count += 1
                 elif state == 'ml_together':
                     val = 1
-                    tracked_days += 1
-                    ml_rescued_count += 1
+                    if count_this:
+                        tracked_days += 1
+                        ml_rescued_count += 1
                 elif state == 'apart':
                     val = -1
-                    tracked_days += 1
+                    if count_this:
+                        tracked_days += 1
                 else:
                     val = 0
             else:
                 is_together = d in together_days and both_tracked
                 if is_together:
                     val = 2
-                    tracked_days += 1
-                    together_count += 1
+                    if count_this:
+                        tracked_days += 1
+                        together_count += 1
                 elif both_tracked:
                     val = -1
-                    tracked_days += 1
+                    if count_this:
+                        tracked_days += 1
                 else:
                     val = 0
 

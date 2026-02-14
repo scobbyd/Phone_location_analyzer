@@ -768,14 +768,24 @@ class LocationAnalyzer:
 
     def _generate_ind_metrics(self) -> Dict[str, Any]:
         """Generate IND-specific cohabitation metrics based on tracked days."""
+        from datetime import date as _date
+
         p1 = self.partner1_interpolated
         p2 = self.partner2_interpolated
         confirmed_overlaps = self.get_confirmed_overlaps()
+
+        # Only count metrics from first meeting onwards
+        first_meeting = None
+        fm = self.config.get('key_dates', {}).get('first_meeting')
+        if fm:
+            first_meeting = _date.fromisoformat(str(fm))
 
         # Days where both partners have at least one data point
         p1_days = set(p1['timestamp'].dt.date.unique())
         p2_days = set(p2['timestamp'].dt.date.unique())
         both_tracked_days = sorted(p1_days & p2_days)
+        if first_meeting:
+            both_tracked_days = [d for d in both_tracked_days if d >= first_meeting]
 
         # Days with co-location (only confirmed overlaps)
         together_days = set()
@@ -801,6 +811,8 @@ class LocationAnalyzer:
             (p2['timestamp'].dt.hour >= 22) | (p2['timestamp'].dt.hour <= 6)
         ]['timestamp'].dt.date.unique())
         both_tracked_nights = sorted(p1_night_dates & p2_night_dates)
+        if first_meeting:
+            both_tracked_nights = [d for d in both_tracked_nights if d >= first_meeting]
 
         pct_nights = (len(night_dates & set(both_tracked_nights)) / len(both_tracked_nights) * 100) if both_tracked_nights else 0
 
