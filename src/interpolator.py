@@ -767,7 +767,8 @@ class LocationInterpolator:
 
         if precomputed_overlaps is not None and not precomputed_overlaps.empty:
             return self._matrix_from_overlaps(
-                precomputed_overlaps, prob_matrix, state_matrix, date_range
+                precomputed_overlaps, prob_matrix, state_matrix, date_range,
+                partner1_df, partner2_df
             )
 
         # Slow path: calculate per-hour probability
@@ -795,8 +796,31 @@ class LocationInterpolator:
         prob_matrix: pd.DataFrame,
         state_matrix: pd.DataFrame,
         date_range: pd.DatetimeIndex,
+        partner1_df: pd.DataFrame = None,
+        partner2_df: pd.DataFrame = None,
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Fill matrices from pre-computed fine-grained overlaps."""
+        # Build per-(date, hour) sets of which partner has data
+        p1_hours = set()
+        p2_hours = set()
+        if partner1_df is not None and not partner1_df.empty:
+            p1_hours = set(zip(
+                partner1_df['timestamp'].dt.date,
+                partner1_df['timestamp'].dt.hour
+            ))
+        if partner2_df is not None and not partner2_df.empty:
+            p2_hours = set(zip(
+                partner2_df['timestamp'].dt.date,
+                partner2_df['timestamp'].dt.hour
+            ))
+
+        # Mark hours where both partners have data as 'apart' (default before overlaps)
+        for d in date_range.date:
+            for h in range(24):
+                if (d, h) in p1_hours and (d, h) in p2_hours:
+                    state_matrix.loc[h, d] = 'apart'
+                    prob_matrix.loc[h, d] = 0.0
+
         # Pre-index overlaps by (date, hour)
         ov = overlaps.copy()
         ov['_date'] = ov['timestamp'].dt.date
@@ -830,8 +854,5 @@ class LocationInterpolator:
 
             prob_matrix.loc[h, d] = prob
             state_matrix.loc[h, d] = 'co_located' if prob >= 0.4 else 'apart'
-
-        # Mark hours where both partners have data but no overlap as 'apart'
-        # (This requires partner data which we don't have here; leave as no_data)
 
         return prob_matrix, state_matrix
