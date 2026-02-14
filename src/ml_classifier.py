@@ -1155,11 +1155,13 @@ def run_ensemble(
     results = predict_all_days(clf, feature_df, labels)
 
     # Build ensemble day classifications
+    # Only count confirmed-tier overlaps in home region for rule-based "together"
+    confirmed_overlaps = analyzer.get_confirmed_overlaps(overlaps)
     p1_days = set(p1['timestamp'].dt.date.unique())
     p2_days = set(p2['timestamp'].dt.date.unique())
     together_days = set()
-    if overlaps is not None and not overlaps.empty:
-        together_days = set(overlaps['timestamp'].dt.date.unique())
+    if confirmed_overlaps is not None and not confirmed_overlaps.empty:
+        together_days = set(confirmed_overlaps['timestamp'].dt.date.unique())
 
     ensemble: Dict[date, str] = {}
     ml_rescued = 0

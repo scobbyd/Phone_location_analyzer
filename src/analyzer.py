@@ -725,36 +725,71 @@ class LocationAnalyzer:
             Dictionary with raw and interpolated statistics
         """
         stats = {
-            'raw': self._stats_for_dataframe(self.overlaps),
-            'interpolated': self._stats_for_dataframe(self.overlaps_with_interpolation)
+            'raw': self._stats_for_dataframe(self.get_confirmed_overlaps(self.overlaps)),
+            'interpolated': self._stats_for_dataframe(self.get_confirmed_overlaps(self.overlaps_with_interpolation))
         }
 
         return stats
+
+    def get_confirmed_overlaps(self, overlaps_df=None):
+        """Filter overlaps to only those trustworthy enough to count as 'together'.
+
+        In the home region (Benelux + Germany), only confirmed tier (<=150m)
+        overlaps count. Neighborhood/city tier matches at home are too noisy
+        (e.g. two people coincidentally walking in the same university area).
+
+        Abroad, all tiers count — being in the same foreign city/neighborhood
+        is strong co-location evidence.
+
+        Returns:
+            Filtered DataFrame of trustworthy overlaps.
+        """
+        if overlaps_df is None:
+            overlaps_df = self.overlaps_with_interpolation
+        if overlaps_df is None or overlaps_df.empty:
+            return overlaps_df
+        if 'proximity_tier' not in overlaps_df.columns:
+            return overlaps_df  # No tier info, keep all
+
+        home_bounds = (47.0, 55.0, 2.5, 15.0)  # Benelux + Germany
+
+        in_home = (
+            (overlaps_df['lat'] >= home_bounds[0]) &
+            (overlaps_df['lat'] <= home_bounds[1]) &
+            (overlaps_df['lon'] >= home_bounds[2]) &
+            (overlaps_df['lon'] <= home_bounds[3])
+        )
+
+        # Keep: confirmed tier anywhere, OR any tier abroad
+        is_confirmed = overlaps_df['proximity_tier'] == 'confirmed'
+        keep = is_confirmed | ~in_home
+
+        return overlaps_df[keep].copy()
 
     def _generate_ind_metrics(self) -> Dict[str, Any]:
         """Generate IND-specific cohabitation metrics based on tracked days."""
         p1 = self.partner1_interpolated
         p2 = self.partner2_interpolated
-        overlaps = self.overlaps_with_interpolation
+        confirmed_overlaps = self.get_confirmed_overlaps()
 
         # Days where both partners have at least one data point
         p1_days = set(p1['timestamp'].dt.date.unique())
         p2_days = set(p2['timestamp'].dt.date.unique())
         both_tracked_days = sorted(p1_days & p2_days)
 
-        # Days with co-location
+        # Days with co-location (only confirmed overlaps)
         together_days = set()
-        if overlaps is not None and not overlaps.empty:
-            together_days = set(overlaps['timestamp'].dt.date.unique())
+        if confirmed_overlaps is not None and not confirmed_overlaps.empty:
+            together_days = set(confirmed_overlaps['timestamp'].dt.date.unique())
 
         tracked_together = together_days & set(both_tracked_days)
         pct_together = (len(tracked_together) / len(both_tracked_days) * 100) if both_tracked_days else 0
 
-        # Nights at shared address
+        # Nights at shared address (only confirmed overlaps)
         night_overlaps = pd.DataFrame()
-        if overlaps is not None and not overlaps.empty:
-            night_overlaps = overlaps[
-                (overlaps['timestamp'].dt.hour >= 22) | (overlaps['timestamp'].dt.hour <= 6)
+        if confirmed_overlaps is not None and not confirmed_overlaps.empty:
+            night_overlaps = confirmed_overlaps[
+                (confirmed_overlaps['timestamp'].dt.hour >= 22) | (confirmed_overlaps['timestamp'].dt.hour <= 6)
             ]
         night_dates = set(night_overlaps['timestamp'].dt.date.unique()) if not night_overlaps.empty else set()
 
