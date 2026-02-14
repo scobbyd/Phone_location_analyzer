@@ -69,7 +69,7 @@ def main():
             ml_count = sum(1 for d, v in ensemble_days.items() if v == 'ml_together' and _fm(d))
             total = rb_count + ml_count
             tracked = sum(1 for d, v in ensemble_days.items() if v != 'no_data' and _fm(d))
-            print(f"\n  Ensemble: {total}/{tracked} days together "
+            print(f"\n  Ensemble: {total}/{tracked} days with both phones active "
                   f"({total/tracked*100:.1f}%) [{rb_count} GPS + {ml_count} ML]")
     except ImportError:
         print("\nNote: ML classifier not available (scikit-learn not installed)")
@@ -150,7 +150,7 @@ def main():
         tracked = sum(1 for d, v in ensemble_days.items() if v != 'no_data' and _fm(d))
         print()
         print("Ensemble Metrics (GPS + ML):")
-        print(f"  Total days together: {rb + ml}/{tracked} ({(rb+ml)/tracked*100:.1f}%)")
+        print(f"  Days together: {rb + ml}/{tracked} days with both phones active ({(rb+ml)/tracked*100:.1f}%)")
         print(f"    GPS-confirmed: {rb}")
         print(f"    ML-predicted:  {ml}")
     print()

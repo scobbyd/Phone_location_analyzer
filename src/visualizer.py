@@ -876,7 +876,7 @@ class LocationVisualizer:
         total_together = together_count + ml_rescued_count
         if tracked_days > 0:
             pct = total_together / tracked_days * 100
-            summary_text = (f"{total_together}/{tracked_days} tracked days together ({pct:.0f}%) "
+            summary_text = (f"{total_together}/{tracked_days} days with both phones active ({pct:.0f}%) "
                            f"[{together_count} GPS + {ml_rescued_count} ML]")
         else:
             summary_text = "0 tracked days"
