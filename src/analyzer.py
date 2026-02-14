@@ -1,10 +1,9 @@
 """Main analysis engine for location overlap detection.
 
-Improved version of the original analyzer with:
-- Uses interpolator for gap filling
-- Better country detection
+Features:
+- Interpolator for gap filling between sparse GPS reports
+- Country detection for location-aware thresholds
 - Configurable via YAML
-- Type hints and clean code
 - Handles multiple phones per person
 """
 
@@ -36,7 +35,7 @@ class LocationAnalyzer:
         self.config = self._load_config(config_path)
         interp_cfg = self.config['interpolation']
         thresh_cfg = self.config['thresholds']
-        # Home region bounding box for drive-by filtering (Benelux + Germany)
+        # Home region bounding box (Central/Western Europe)
         home_region_bounds = (47.0, 55.0, 2.5, 15.0)
         self.interpolator = LocationInterpolator(
             max_gap_hours=interp_cfg['max_gap_hours'],
@@ -537,8 +536,8 @@ class LocationAnalyzer:
                     if dist > tier1:
                         country1 = self.detect_country(row1['lat'], row1['lon'])
                         country2 = self.detect_country(row2['lat'], row2['lon'])
-                        both_home = ('Netherlands' in country1 or 'Belgium' in country1 or 'Germany' in country1)
-                        if both_home:
+                        p1_home = ('Netherlands' in country1 or 'Belgium' in country1 or 'Germany' in country1)
+                        if p1_home:
                             # In home region: also apply drive-by filter
                             s1 = row1.get('_speed', 0)
                             s2 = row2.get('_speed', 0)

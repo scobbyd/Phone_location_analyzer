@@ -424,7 +424,7 @@ class LocationInterpolator:
         Uses geofence circle overlap:  co-located when distance < r1 + r2.
         Also applies dynamic distance thresholds based on movement context:
           - both stationary/walking  -> neighborhood_m  (750 m)
-          - any driving              -> 2000 m (traveling together)
+          - any driving (abroad)     -> 2000 m (traveling together)
 
         Results are de-duplicated to one match per *bucket_minutes* window,
         keeping the closest-distance match.

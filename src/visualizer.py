@@ -6,6 +6,7 @@ Creates multiple visualization types:
 3. Monthly summary cards
 4. Interactive folium map
 5. Confidence timeline
+6. IND cohabitation calendar
 """
 
 from datetime import datetime, timedelta
@@ -224,10 +225,11 @@ class LocationVisualizer:
                         'no_data': 'ml_rescued_nodata',
                     })
 
-        # Gap-fill for abroad travel days with high overlap density.
-        # When >=70% of both-tracked hours already have overlaps (abroad only),
+        # Gap-fill for travel days with high overlap density.
+        # When >=70% of both-tracked hours already have overlaps,
         # the remaining "apart" gaps are GPS interpolation artifacts from
         # driving together. Fill them as co_located.
+        # (density threshold serves as proxy for travel context)
         home_bounds = (47.0, 55.0, 2.5, 15.0)  # Benelux + Germany
         for col in state_matrix.columns:
             col_values = state_matrix[col]

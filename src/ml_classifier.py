@@ -794,7 +794,7 @@ def compare_with_rule_based(
             print(f"  {d}: p={row['ml_probability']:.3f}, RB={rb}, true={true}")
 
 
-# ─── Immich Photo Cross-Reference (stub for when API key is available) ──────
+# ─── Immich Photo Cross-Reference ───────────────────────────────────────────
 
 def query_immich_photos(
     person_id: str,
