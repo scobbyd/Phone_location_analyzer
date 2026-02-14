@@ -187,9 +187,9 @@ def derive_nighttime_apart_labels(
 ) -> Dict[date, str]:
     """Derive 'apart' labels for nights where each partner is at their own home.
 
-    For the early dating period (Jun - before Sean moved to Maia's), detect
-    each partner's home from nighttime GPS clusters, then label nights where
-    Sean is at his home AND Maia is at her Belgium home as 'apart'.
+    For the early dating period (Jun - before Sean started staying at Maia's),
+    detect each partner's home from nighttime GPS clusters, then label nights
+    where Sean is at his home AND Maia is at her Belgium home as 'apart'.
 
     Conservative: only labels a day as 'apart' if BOTH:
     1. Both slept at their own homes that night
@@ -204,7 +204,7 @@ def derive_nighttime_apart_labels(
         labels: Existing labels dict (modified in-place)
         overlaps_df: Pre-computed overlaps for confirmed overlap check
         start_date: Start of period to check (default: day after first meeting)
-        end_date: End of period (default: before Sean moved to Maia's Aug 2)
+        end_date: End of period (default: before Sean started staying at Maia's Aug 2)
         home_radius_m: Maximum distance from home centroid to count as "at home"
 
     Returns:
