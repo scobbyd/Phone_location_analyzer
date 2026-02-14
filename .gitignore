@@ -20,6 +20,12 @@ htmlcov/
 dist/
 build/
 
+# Ground truth (personal info)
+ground_truth.md
+
+# Environment files
+.env
+
 # Generated docs from agents
 COMPLETION_REPORT.md
 FILE_REFERENCE.md

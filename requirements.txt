@@ -20,6 +20,9 @@ folium>=0.15.1
 # Utilities
 python-dateutil>=2.8.2
 
+# ML classifier
+scikit-learn>=1.4.0
+
 # Optional (for development)
 # pytest>=7.4.0
 # black>=23.12.0

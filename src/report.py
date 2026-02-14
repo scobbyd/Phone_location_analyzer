@@ -9,7 +9,7 @@ Generates comprehensive text reports for IND submission with:
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import pandas as pd
 
 
@@ -32,7 +32,8 @@ class INDReportGenerator:
         stats_interp: Dict[str, Any],
         overlaps_df: pd.DataFrame,
         overlaps_interp_df: pd.DataFrame,
-        output_file: Path
+        output_file: Path,
+        ind_metrics: Optional[Dict[str, Any]] = None
     ) -> str:
         """Generate comprehensive IND report.
 
@@ -42,6 +43,11 @@ class INDReportGenerator:
             overlaps_df: Raw overlap DataFrame
             overlaps_interp_df: Interpolated overlap DataFrame
             output_file: Output file path
+            ind_metrics: Optional percentage-based metrics dict with keys:
+                total_tracked_days, days_together, pct_days_together,
+                total_tracked_nights, nights_at_shared_address,
+                pct_nights_together, date_range_start, date_range_end,
+                total_gap_days, p1_only_days, p2_only_days
 
         Returns:
             Report text
@@ -62,11 +68,20 @@ class INDReportGenerator:
         report.append("This analysis demonstrates consistent co-location patterns between partners,")
         report.append("providing objective evidence of a genuine cohabiting relationship.")
         report.append("")
-        report.append("Key Evidence:")
-        report.append(f"  - {stats_raw['unique_days']} days with verified co-location (raw data)")
-        report.append(f"  - {stats_interp['unique_days']} days together (including interpolation)")
-        report.append(f"  - {stats_raw['nights_together']} nights spent together")
-        report.append(f"  - Analysis covers {stats_raw['date_range']}")
+        if ind_metrics:
+            report.append("Key Evidence:")
+            report.append(f"  - Out of {ind_metrics['total_tracked_days']} days where both partners were tracked,")
+            report.append(f"    they were at the same location on {ind_metrics['days_together']} days ({ind_metrics['pct_days_together']}%)")
+            report.append(f"  - {ind_metrics['nights_at_shared_address']} out of {ind_metrics['total_tracked_nights']} tracked nights")
+            report.append(f"    spent at the same address ({ind_metrics['pct_nights_together']}%)")
+            report.append(f"  - Analysis covers {ind_metrics['date_range_start']} to {ind_metrics['date_range_end']}")
+            report.append(f"  - {ind_metrics['total_gap_days']} days had incomplete tracking data (one partner's phone not reporting)")
+        else:
+            report.append("Key Evidence:")
+            report.append(f"  - {stats_raw['unique_days']} days with verified co-location (raw data)")
+            report.append(f"  - {stats_interp['unique_days']} days together (including interpolation)")
+            report.append(f"  - {stats_raw['nights_together']} nights spent together")
+            report.append(f"  - Analysis covers {stats_raw['date_range']}")
         report.append("")
 
         # Data Source Verification
@@ -105,6 +120,24 @@ class INDReportGenerator:
         report.append("Note: Phones report location sparsely when not moving (every 1-4 hours).")
         report.append("Interpolation accounts for this technical limitation to show actual presence.")
         report.append("")
+
+        # Data Coverage Transparency (only when ind_metrics provided)
+        if ind_metrics:
+            report.append("DATA COVERAGE TRANSPARENCY")
+            report.append("-" * 80)
+            report.append("Location tracking depends on phone settings and battery. Not all days have")
+            report.append("complete data from both partners.")
+            report.append("")
+            report.append("Coverage Summary:")
+            report.append(f"  - Days with both partners tracked: {ind_metrics['total_tracked_days']}")
+            report.append(f"  - Days only Sean tracked: {ind_metrics['p1_only_days']}")
+            report.append(f"  - Days only Maia tracked: {ind_metrics['p2_only_days']}")
+            report.append("  - All percentages below are calculated against tracked days only")
+            report.append("")
+            report.append("This transparency ensures the IND can evaluate the evidence in its proper")
+            report.append("context. Missing data does not indicate absence - it indicates the phone")
+            report.append("was not recording location at that time.")
+            report.append("")
 
         # Statistics Comparison
         report.append("ANALYSIS RESULTS")
@@ -162,11 +195,17 @@ class INDReportGenerator:
         report.append("-" * 80)
         report.append("")
         report.append("1. COHABITATION (Samenwonen):")
-        report.append(f"   Evidence: {stats_raw['nights_together']} verified nights at shared residence")
+        if ind_metrics:
+            report.append(f"   Evidence: {ind_metrics['nights_at_shared_address']} out of {ind_metrics['total_tracked_nights']} tracked nights ({ind_metrics['pct_nights_together']}%)")
+        else:
+            report.append(f"   Evidence: {stats_raw['nights_together']} verified nights at shared residence")
         report.append("   Strength: STRONG - Consistent overnight stays demonstrate shared household")
         report.append("")
         report.append("2. DAILY LIFE INTEGRATION (Dagelijks leven samen):")
-        report.append(f"   Evidence: {stats_raw['unique_days']} days with synchronized locations")
+        if ind_metrics:
+            report.append(f"   Evidence: {ind_metrics['days_together']} out of {ind_metrics['total_tracked_days']} tracked days ({ind_metrics['pct_days_together']}%)")
+        else:
+            report.append(f"   Evidence: {stats_raw['unique_days']} days with synchronized locations")
         report.append("   Strength: STRONG - Regular daily co-location shows genuine life sharing")
         report.append("")
         report.append("3. RELATIONSHIP COMMITMENT (Duurzame relatie):")

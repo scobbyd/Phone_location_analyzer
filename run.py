@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Main entry point for immigration location analysis.
 
-Simple script to run the complete analysis pipeline.
+Runs the complete pipeline: GPS analysis → ML ensemble → visualizations → IND report.
 """
 
 import sys
@@ -51,21 +51,48 @@ def main():
     output_path = Path(__file__).parent / analyzer.config['output']['directory']
     output_path.mkdir(parents=True, exist_ok=True)
 
+    # ML Ensemble step
+    ensemble_days = None
+    try:
+        from ml_classifier import run_ensemble
+        print("\n" + "=" * 60)
+        print("ML Ensemble Classification")
+        print("=" * 60)
+        ensemble_days = run_ensemble(analyzer, threshold=0.7)
+        if ensemble_days:
+            rb_count = sum(1 for v in ensemble_days.values() if v == 'together')
+            ml_count = sum(1 for v in ensemble_days.values() if v == 'ml_together')
+            total = rb_count + ml_count
+            tracked = sum(1 for v in ensemble_days.values() if v != 'no_data')
+            print(f"\n  Ensemble: {total}/{tracked} days together "
+                  f"({total/tracked*100:.1f}%) [{rb_count} GPS + {ml_count} ML]")
+    except ImportError:
+        print("\nNote: ML classifier not available (scikit-learn not installed)")
+        print("Running with rule-based analysis only.")
+    except Exception as e:
+        print(f"\nWarning: ML ensemble failed ({e}), using rule-based only.")
+
     # Generate visualizations
     print("\nGenerating visualizations...")
     visualizer = LocationVisualizer(analyzer.config)
 
     # Build presence matrix if we have interpolated data
     presence_matrix = None
+    state_matrix = None
     if analyzer.partner1_interpolated is not None and analyzer.partner2_interpolated is not None:
         print("Building presence matrix...")
-        presence_matrix = analyzer.interpolator.build_presence_matrix(
+        end_date = (
+            analyzer.overlaps_with_interpolation['timestamp'].max()
+            if analyzer.overlaps_with_interpolation is not None
+            and not analyzer.overlaps_with_interpolation.empty
+            else analyzer.start_date
+        )
+        presence_matrix, state_matrix = analyzer.interpolator.build_presence_matrix(
             analyzer.partner1_interpolated,
             analyzer.partner2_interpolated,
             analyzer.start_date,
-            analyzer.overlaps_with_interpolation['timestamp'].max()
-            if analyzer.overlaps_with_interpolation is not None and not analyzer.overlaps_with_interpolation.empty
-            else analyzer.start_date
+            end_date,
+            precomputed_overlaps=analyzer.overlaps_with_interpolation,
         )
 
     visualizer.create_all_visualizations(
@@ -74,7 +101,9 @@ def main():
         analyzer.overlaps,
         analyzer.overlaps_with_interpolation,
         presence_matrix,
-        output_path
+        output_path,
+        state_matrix=state_matrix,
+        ensemble_days=ensemble_days
     )
 
     # Generate report
@@ -86,7 +115,8 @@ def main():
         stats['interpolated'],
         analyzer.overlaps,
         analyzer.overlaps_with_interpolation,
-        output_path / "IND_Evidence_Report.txt"
+        output_path / "IND_Evidence_Report.txt",
+        ind_metrics=stats.get('ind_metrics')
     )
 
     # Summary
@@ -100,6 +130,21 @@ def main():
     print(f"  Nights together: {stats['raw']['nights_together']}")
     print(f"  Total co-locations (raw): {stats['raw']['total_colocations']}")
     print(f"  Total co-locations (interpolated): {stats['interpolated']['total_colocations']}")
+    if 'ind_metrics' in stats:
+        ind = stats['ind_metrics']
+        print()
+        print("IND Evidence Metrics (rule-based):")
+        print(f"  Tracked days together: {ind['days_together']}/{ind['total_tracked_days']} ({ind['pct_days_together']}%)")
+        print(f"  Nights at shared address: {ind['nights_at_shared_address']}/{ind['total_tracked_nights']} ({ind['pct_nights_together']}%)")
+    if ensemble_days:
+        rb = sum(1 for v in ensemble_days.values() if v == 'together')
+        ml = sum(1 for v in ensemble_days.values() if v == 'ml_together')
+        tracked = sum(1 for v in ensemble_days.values() if v != 'no_data')
+        print()
+        print("Ensemble Metrics (GPS + ML):")
+        print(f"  Total days together: {rb + ml}/{tracked} ({(rb+ml)/tracked*100:.1f}%)")
+        print(f"    GPS-confirmed: {rb}")
+        print(f"    ML-predicted:  {ml}")
     print()
     print(f"All outputs saved to: {output_path}")
     print()
